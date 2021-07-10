@@ -5,8 +5,6 @@ import pandas as pd
 from sql_queries import *
 from datetime import datetime
 
-songplay_index=0
-
 def process_song_file(cur, filepath):
     """
     - reads song data from the json file
@@ -51,7 +49,7 @@ def process_log_file(cur, filepath):
     # insert time data records
     time_data = []
     for record in t:
-        time_data.append([str(record), record.hour, record.day, record.week, record.month, record.year, record.day_name()])
+        time_data.append([record, record.hour, record.day, record.week, record.month, record.year, record.day_name()])
     column_labels = ("start_time", "hour", "day", "week", "month", "year", "weekday")
     time_df = pd.DataFrame.from_records(time_data, columns=column_labels)
 
@@ -68,7 +66,6 @@ def process_log_file(cur, filepath):
 
     # insert songplay records
     for index, row in df.iterrows():
-        global songplay_index
         # get songid and artistid from song and artist tables
         cur.execute(song_select, (row.song, row.artist, row.length))
         results = cur.fetchone()
@@ -79,9 +76,8 @@ def process_log_file(cur, filepath):
             songid, artistid = None, None
 
         # insert songplay record
-        songplay_data = (songplay_index, str(pd.to_datetime(row.ts, unit='ms')), row.userId, row.level, songid, artistid, row.sessionId, row.location, row.userAgent)
+        songplay_data = (pd.to_datetime(row.ts, unit='ms'), row.userId, row.level, songid, artistid, row.sessionId, row.location, row.userAgent)
         cur.execute(songplay_table_insert, songplay_data)
-        songplay_index += 1
 
 def process_data(cur, conn, filepath, func):
     """
